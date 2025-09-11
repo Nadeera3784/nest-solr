@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  solr:
+    image: solr:9
+    container_name: nest-solr-e2e
+    ports:
+      - "8983:8983"
+    command:
+      - solr-precreate
+      - mycore
+    healthcheck:
+      test: ["CMD", "bash", "-c", "wget -qO- http://localhost:8983/solr/mycore/admin/ping?wt=json | grep 'OK' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+
