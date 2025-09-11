@@ -7,11 +7,18 @@ import type { SolrHttpClient, SolrSearchParams } from './solr-http.client';
 export class SolrService {
   constructor(@Inject(SOLR_CLIENT) private readonly client: SolrHttpClient) {}
 
-  getClient(): SolrHttpClient { return this.client; }
+  getClient(): SolrHttpClient {
+    return this.client;
+  }
 
-  createQuery(): SolrQueryBuilder { return new SolrQueryBuilder(); }
+  createQuery(): SolrQueryBuilder {
+    return new SolrQueryBuilder();
+  }
 
-  async add<T extends Record<string, any>>(doc: T | T[], options?: { commitWithin?: number; overwrite?: boolean }): Promise<any> {
+  async add<T extends Record<string, any>>(
+    doc: T | T[],
+    options?: { commitWithin?: number; overwrite?: boolean },
+  ): Promise<any> {
     return this.client.add(doc as any, options as any);
   }
 
@@ -27,7 +34,11 @@ export class SolrService {
     return this.client.deleteByQuery(query);
   }
 
-  async optimize(options?: { softCommit?: boolean; waitSearcher?: boolean; maxSegments?: number }): Promise<any> {
+  async optimize(options?: {
+    softCommit?: boolean;
+    waitSearcher?: boolean;
+    maxSegments?: number;
+  }): Promise<any> {
     return this.client.optimize(options as any);
   }
 
@@ -36,4 +47,3 @@ export class SolrService {
     return this.client.search(params);
   }
 }
-

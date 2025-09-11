@@ -1,6 +1,10 @@
 import { DynamicModule, Global, Module, Provider } from '@nestjs/common';
 import { SOLR_CLIENT, SOLR_MODULE_OPTIONS } from './solr.constants';
-import { SolrModuleAsyncOptions, SolrModuleOptions, SolrModuleOptionsFactory } from './interfaces/solr.interfaces';
+import {
+  SolrModuleAsyncOptions,
+  SolrModuleOptions,
+  SolrModuleOptionsFactory,
+} from './interfaces/solr.interfaces';
 import { SolrService } from './solr.service';
 import { SolrHttpClient } from './solr-http.client';
 
@@ -15,14 +19,15 @@ export class SolrModule {
 
     const clientProvider: Provider = {
       provide: SOLR_CLIENT,
-      useFactory: () => new SolrHttpClient({
-        host: options.host,
-        port: options.port as any,
-        core: options.core,
-        path: options.path,
-        secure: options.secure,
-        basicAuth: options.basicAuth,
-      }),
+      useFactory: () =>
+        new SolrHttpClient({
+          host: options.host,
+          port: options.port as any,
+          core: options.core,
+          path: options.path,
+          secure: options.secure,
+          basicAuth: options.basicAuth,
+        }),
     };
 
     return {
@@ -56,7 +61,9 @@ export class SolrModule {
     };
   }
 
-  private static createAsyncProviders(options: SolrModuleAsyncOptions): Provider[] {
+  private static createAsyncProviders(
+    options: SolrModuleAsyncOptions,
+  ): Provider[] {
     if (options.useFactory) {
       return [
         {
@@ -69,13 +76,16 @@ export class SolrModule {
 
     const useClass = options.useClass || options.useExisting;
     if (!useClass) {
-      throw new Error('Invalid SolrModuleAsyncOptions: provide useFactory, useClass or useExisting');
+      throw new Error(
+        'Invalid SolrModuleAsyncOptions: provide useFactory, useClass or useExisting',
+      );
     }
 
     const providers: Provider[] = [
       {
         provide: SOLR_MODULE_OPTIONS,
-        useFactory: async (factory: SolrModuleOptionsFactory) => factory.createSolrModuleOptions(),
+        useFactory: async (factory: SolrModuleOptionsFactory) =>
+          factory.createSolrModuleOptions(),
         inject: [useClass],
       },
     ];
@@ -87,4 +97,3 @@ export class SolrModule {
     return providers;
   }
 }
-

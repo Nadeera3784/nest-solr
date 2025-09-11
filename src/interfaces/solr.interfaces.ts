@@ -13,7 +13,8 @@ export interface SolrModuleOptionsFactory {
   createSolrModuleOptions(): Promise<SolrModuleOptions> | SolrModuleOptions;
 }
 
-export interface SolrModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
+export interface SolrModuleAsyncOptions
+  extends Pick<ModuleMetadata, 'imports'> {
   useExisting?: Type<SolrModuleOptionsFactory>;
   useClass?: Type<SolrModuleOptionsFactory>;
   useFactory?: (
@@ -21,5 +22,3 @@ export interface SolrModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> 
   ) => Promise<SolrModuleOptions> | SolrModuleOptions;
   inject?: any[];
 }
-
-

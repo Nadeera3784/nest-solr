@@ -1,3 +1,2 @@
 export const SOLR_MODULE_OPTIONS = 'SOLR_MODULE_OPTIONS';
 export const SOLR_CLIENT = 'SOLR_CLIENT';
-

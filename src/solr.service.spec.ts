@@ -5,7 +5,9 @@ import { SOLR_CLIENT } from './solr.constants';
 describe('SolrService', () => {
   let service: SolrService;
   const mockClient = {
-    search: jest.fn(async () => ({ response: { numFound: 1, docs: [{ id: '1' }] } })),
+    search: jest.fn(async () => ({
+      response: { numFound: 1, docs: [{ id: '1' }] },
+    })),
     add: jest.fn(async () => ({ status: 0 })),
     commit: jest.fn(async () => ({ status: 0 })),
     optimize: jest.fn(async () => ({ status: 0 })),
@@ -15,10 +17,7 @@ describe('SolrService', () => {
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
-      providers: [
-        SolrService,
-        { provide: SOLR_CLIENT, useValue: mockClient },
-      ],
+      providers: [SolrService, { provide: SOLR_CLIENT, useValue: mockClient }],
     }).compile();
 
     service = moduleRef.get(SolrService);
@@ -51,5 +50,3 @@ describe('SolrService', () => {
     expect(mockClient.optimize).toHaveBeenCalled();
   });
 });
-
-

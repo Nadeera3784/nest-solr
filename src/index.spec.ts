@@ -8,5 +8,3 @@ describe('index barrel exports', () => {
     expect(api.SOLR_MODULE_OPTIONS).toBeDefined();
   });
 });
-
-

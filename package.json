@@ -1,10 +1,18 @@
 {
   "name": "nest-solr",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "NestJS module for Apache Solr with query builder",
   "author": "Nadeera Sampath",
   "private": false,
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nadeera3784/nest-solr.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Nadeera3784/nest-solr/issues"
+  },
+  "homepage": "https://github.com/Nadeera3784/nest-solr#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "prepublishOnly": "npm run build",

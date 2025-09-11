@@ -39,13 +39,11 @@ describe('SolrQueryBuilder', () => {
   it('supports inequality and wildcard and grouping', () => {
     const qb = new SolrQueryBuilder()
       .group(true)
-        .ne('type', 'magazine')
-        .and()
-        .startsWith('title', 'Cook')
+      .ne('type', 'magazine')
+      .and()
+      .startsWith('title', 'Cook')
       .group(false);
     const params = qb.toParams();
     expect(params.q).toBe('( -type:magazine AND title:Cook* )');
   });
 });
-
-

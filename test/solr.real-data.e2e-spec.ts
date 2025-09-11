@@ -9,16 +9,50 @@ describe('Solr real-data E2E', () => {
   let solr: SolrService;
 
   const docs = [
-    { id: 'b-1', type: 'book', title: 'Node in Action', price: 25, category: 'tech', author: 'Alice' },
-    { id: 'b-2', type: 'book', title: 'Mastering NestJS', price: 35, category: 'tech', author: 'Bob' },
-    { id: 'b-3', type: 'book', title: 'Cooking 101', price: 15, category: 'cooking', author: 'Carla' },
-    { id: 'm-1', type: 'magazine', title: 'Tech Today', price: 10, category: 'tech', author: 'Dave' },
+    {
+      id: 'b-1',
+      type: 'book',
+      title: 'Node in Action',
+      price: 25,
+      category: 'tech',
+      author: 'Alice',
+    },
+    {
+      id: 'b-2',
+      type: 'book',
+      title: 'Mastering NestJS',
+      price: 35,
+      category: 'tech',
+      author: 'Bob',
+    },
+    {
+      id: 'b-3',
+      type: 'book',
+      title: 'Cooking 101',
+      price: 15,
+      category: 'cooking',
+      author: 'Carla',
+    },
+    {
+      id: 'm-1',
+      type: 'magazine',
+      title: 'Tech Today',
+      price: 10,
+      category: 'tech',
+      author: 'Dave',
+    },
   ];
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
-        SolrModule.forRoot({ host: '127.0.0.1', port: 8983, path: '/solr', core: 'mycore', secure: false }),
+        SolrModule.forRoot({
+          host: '127.0.0.1',
+          port: 8983,
+          path: '/solr',
+          core: 'mycore',
+          secure: false,
+        }),
       ],
     }).compile();
 
@@ -26,7 +60,6 @@ describe('Solr real-data E2E', () => {
     await app.init();
     solr = app.get(SolrService);
 
-    // Ensure required fields exist in schema
     await addFields([
       { name: 'type', type: 'string', stored: true, indexed: true },
       { name: 'title', type: 'text_general', stored: true, indexed: true },
@@ -35,7 +68,6 @@ describe('Solr real-data E2E', () => {
       { name: 'author', type: 'string', stored: true, indexed: true },
     ]);
 
-    // clean pre-existing test docs
     await solr.deleteByQuery('id:b-* OR id:m-*');
     await solr.commit();
 
@@ -44,7 +76,6 @@ describe('Solr real-data E2E', () => {
   }, 60000);
 
   afterAll(async () => {
-    // clean up docs
     await solr.deleteByQuery('id:b-* OR id:m-*');
     await solr.commit();
     await app.close();
@@ -66,7 +97,7 @@ describe('Solr real-data E2E', () => {
   it('facets on category', async () => {
     const qb = solr.createQuery().q('*:*').facet(['category']).rows(0);
     const res = await solr.search(qb);
-    // facet counts are returned under facet_counts.facet_fields.category
+
     const list: any[] = res.facet_counts?.facet_fields?.category || [];
     const pairs: Record<string, number> = {};
     for (let i = 0; i < list.length; i += 2) pairs[list[i]] = list[i + 1];
@@ -78,13 +109,13 @@ describe('Solr real-data E2E', () => {
     const qb = solr
       .createQuery()
       .group(true)
-        .eq('type', 'book')
-        .and()
-        .group(true)
-          .phrase('title', 'Mastering NestJS')
-          .or()
-          .startsWith('title', 'Node')
-        .group(false)
+      .eq('type', 'book')
+      .and()
+      .group(true)
+      .phrase('title', 'Mastering NestJS')
+      .or()
+      .startsWith('title', 'Node')
+      .group(false)
       .group(false)
       .and()
       .in('category', ['tech', 'cooking'])
@@ -99,10 +130,8 @@ describe('Solr real-data E2E', () => {
   }, 20000);
 
   it('deletes by ID and verifies', async () => {
-    // Use delete by query for reliability across schema variations
     await solr.deleteByQuery('id:m-1');
     await solr.commit();
-    // Wait up to 5s for delete to be visible
     let numFound = -1;
     for (let i = 0; i < 10; i += 1) {
       const res = await solr.search(solr.createQuery().eq('id', 'm-1').rows(1));
@@ -115,7 +144,14 @@ describe('Solr real-data E2E', () => {
   }, 20000);
 });
 
-async function addFields(fields: Array<{ name: string; type: string; stored: boolean; indexed: boolean }>): Promise<void> {
+async function addFields(
+  fields: Array<{
+    name: string;
+    type: string;
+    stored: boolean;
+    indexed: boolean;
+  }>,
+): Promise<void> {
   for (const field of fields) {
     const body = JSON.stringify({ 'add-field': field });
     // eslint-disable-next-line no-await-in-loop
@@ -136,17 +172,26 @@ async function addFields(fields: Array<{ name: string; type: string; stored: boo
           res.on('data', (d) => chunks.push(d));
           res.on('end', () => {
             const text = Buffer.concat(chunks).toString('utf8');
-            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) return resolve();
-            // Ignore already exists errors to make test idempotent
+            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300)
+              return resolve();
+
             try {
               const json = JSON.parse(text);
               const details = json.error?.details || [];
-              const exists = Array.isArray(details) && details.some((d: any) =>
-                (d.errorMessages || []).some((m: string) => /already exists/i.test(m)),
-              );
+              const exists =
+                Array.isArray(details) &&
+                details.some((d: any) =>
+                  (d.errorMessages || []).some((m: string) =>
+                    /already exists/i.test(m),
+                  ),
+                );
               if (exists) return resolve();
             } catch {}
-            reject(new Error(`Schema update failed: ${res.statusCode} ${res.statusMessage} - ${text}`));
+            reject(
+              new Error(
+                `Schema update failed: ${res.statusCode} ${res.statusMessage} - ${text}`,
+              ),
+            );
           });
         },
       );
@@ -156,5 +201,3 @@ async function addFields(fields: Array<{ name: string; type: string; stored: boo
     });
   }
 }
-
-
