@@ -145,6 +145,25 @@ export class SearchService {
 - **deleteByQuery(query)**: deletes documents matching a query string (e.g., `id:123`).
 - **optimize(options?)**: optimizes the index; supports `{ softCommit, waitSearcher, maxSegments }`.
 - **search(queryOrBuilder)**: executes a search; accepts a `SolrQueryBuilder` or params object from `builder.toParams()`.
+- **defineSchema(options)**: defines schema via Solr Schema API; supports `{ fieldTypes, fields, copyFields, uniqueKey }`.
+
+### Define schema (Schema API)
+
+```ts
+// Define field types, fields, copy fields and unique key
+await solrService.defineSchema({
+  fieldTypes: [
+    { name: 'text_en', class: 'solr.TextField', positionIncrementGap: '100' },
+  ],
+  fields: [
+    { name: 'id', type: 'string', stored: true, indexed: true, required: true },
+    { name: 'title', type: 'text_en', stored: true, indexed: true },
+  ],
+  // dest can be a string or string[]; multiple entries are expanded
+  copyFields: [{ source: 'title', dest: ['text', 'all'] }],
+  uniqueKey: 'id',
+});
+```
 
 
 

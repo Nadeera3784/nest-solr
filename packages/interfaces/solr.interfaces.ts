@@ -22,3 +22,34 @@ export interface SolrModuleAsyncOptions
   ) => Promise<SolrModuleOptions> | SolrModuleOptions;
   inject?: any[];
 }
+
+export interface SolrSchemaField {
+  name: string;
+  type: string;
+  stored?: boolean;
+  indexed?: boolean;
+  multiValued?: boolean;
+  required?: boolean;
+  docValues?: boolean;
+  omitNorms?: boolean;
+  [key: string]: any;
+}
+
+export interface SolrFieldType {
+  name: string;
+  class?: string;
+  [key: string]: any;
+}
+
+export interface SolrCopyField {
+  source: string;
+  dest: string | string[];
+  maxChars?: number;
+}
+
+export interface SolrDefineSchemaOptions {
+  fields?: SolrSchemaField[];
+  fieldTypes?: SolrFieldType[];
+  copyFields?: SolrCopyField[];
+  uniqueKey?: string;
+}
