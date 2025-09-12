@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { SolrModule } from '../src/solr.module';
-import { SolrService } from '../src/solr.service';
+import { SolrModule } from '../packages/solr.module';
+import { SolrService } from '../packages/solr.service';
 import * as http from 'http';
 
 describe('Solr real-data E2E', () => {
