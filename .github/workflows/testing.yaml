@@ -1,0 +1,57 @@
+name: Testing
+on:
+  pull_request:
+    branches:
+      - main
+jobs:
+  lint:
+    name: ESLint
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          check-latest: true
+          architecture: x64
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run ESLint
+        run: npx eslint '{packages,apps,libs,test}/**/*.ts'
+  test:
+    name: Node.js 22 (LTS)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          check-latest: true
+          architecture: x64
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Cache Docker images
+        uses: ScribeMD/docker-cache@0.5.0
+        with:
+          key: docker-${{ runner.os }}-${{ hashFiles('docker-compose.yml') }}
+      - name: Run docker-compose
+        uses: hoverkraft-tech/compose-action@v2.0.2
+        with:
+          compose-file: './docker-compose.yml'
+          up-flags: '-d'
+          down-flags: '-v'
+      - name: Wait for Solr health
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://localhost:8983/solr/mycore/admin/ping?wt=json | grep -q 'OK'; then
+              echo "Solr is healthy"; exit 0; fi; sleep 2; done;
+          echo "Solr did not become healthy in time"; exit 1
+      - name: Run e2e tests
+        run: npm run test:e2e
+ 

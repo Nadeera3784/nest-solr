@@ -1,8 +1,8 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as http from 'http';
-import { SolrModule } from '../src/solr.module';
-import { SolrService } from '../src/solr.service';
+import { SolrModule } from '../packages/solr.module';
+import { SolrService } from '../packages/solr.service';
 
 describe('SolrModule (e2e)', () => {
   let app: INestApplication;
