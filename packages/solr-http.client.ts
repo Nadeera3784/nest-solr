@@ -92,6 +92,47 @@ export class SolrHttpClient {
     return this.request('POST', url, body);
   }
 
+  async defineSchema(definition: {
+    fields?: Array<Record<string, any>>;
+    fieldTypes?: Array<Record<string, any>>;
+    copyFields?: Array<{
+      source: string;
+      dest: string | string[];
+      maxChars?: number;
+    }>;
+    uniqueKey?: string;
+  }): Promise<any> {
+    const url = new URL(this.baseUrl + '/schema');
+    const payload: Record<string, any>[] = [];
+
+    if (definition.fieldTypes?.length) {
+      for (const ft of definition.fieldTypes) {
+        payload.push({ 'add-field-type': ft });
+      }
+    }
+    if (definition.fields?.length) {
+      for (const f of definition.fields) {
+        payload.push({ 'add-field': f });
+      }
+    }
+    if (definition.copyFields?.length) {
+      for (const cf of definition.copyFields) {
+        const entries = Array.isArray(cf.dest)
+          ? cf.dest.map((d) => ({
+              source: cf.source,
+              dest: d,
+              maxChars: cf.maxChars,
+            }))
+          : [{ source: cf.source, dest: cf.dest, maxChars: cf.maxChars }];
+        for (const e of entries) payload.push({ 'add-copy-field': e });
+      }
+    }
+    if (definition.uniqueKey) {
+      payload.push({ 'set-unique-key': definition.uniqueKey });
+    }
+    return this.request('POST', url, payload);
+  }
+
   private async request(
     method: 'GET' | 'POST',
     url: URL,

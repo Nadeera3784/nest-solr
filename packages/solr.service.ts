@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { SOLR_CLIENT } from './solr.constants';
 import { SolrQueryBuilder } from './solr.query-builder';
 import type { SolrHttpClient, SolrSearchParams } from './solr-http.client';
+import type { SolrDefineSchemaOptions } from './interfaces/solr.interfaces';
 
 @Injectable()
 export class SolrService {
@@ -45,5 +46,14 @@ export class SolrService {
   async search(query: SolrSearchParams | SolrQueryBuilder): Promise<any> {
     const params = query instanceof SolrQueryBuilder ? query.toParams() : query;
     return this.client.search(params);
+  }
+
+  async defineSchema(options: SolrDefineSchemaOptions): Promise<any> {
+    return this.client.defineSchema({
+      fields: options.fields as Array<Record<string, any>> | undefined,
+      fieldTypes: options.fieldTypes as Array<Record<string, any>> | undefined,
+      copyFields: options.copyFields,
+      uniqueKey: options.uniqueKey,
+    });
   }
 }

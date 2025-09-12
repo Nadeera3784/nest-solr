@@ -13,6 +13,7 @@ describe('SolrService', () => {
     optimize: jest.fn(async () => ({ status: 0 })),
     deleteByID: jest.fn(async () => ({ status: 0 })),
     deleteByQuery: jest.fn(async () => ({ status: 0 })),
+    defineSchema: jest.fn(async (payload) => ({ ok: true, payload })),
   } as any;
 
   beforeEach(async () => {
@@ -48,5 +49,21 @@ describe('SolrService', () => {
     expect(mockClient.deleteByID).toHaveBeenCalledWith('1');
     expect(mockClient.deleteByQuery).toHaveBeenCalledWith('id:1');
     expect(mockClient.optimize).toHaveBeenCalled();
+  });
+
+  it('defineSchema delegates to client with transformed payload', async () => {
+    const res = await service.defineSchema({
+      fieldTypes: [{ name: 'text_en', class: 'solr.TextField' }],
+      fields: [{ name: 'title', type: 'text_en', stored: true, indexed: true }],
+      copyFields: [{ source: 'title', dest: 'text' }],
+      uniqueKey: 'id',
+    });
+    expect(mockClient.defineSchema).toHaveBeenCalledWith({
+      fieldTypes: [{ name: 'text_en', class: 'solr.TextField' }],
+      fields: [{ name: 'title', type: 'text_en', stored: true, indexed: true }],
+      copyFields: [{ source: 'title', dest: 'text' }],
+      uniqueKey: 'id',
+    });
+    expect(res.ok).toBe(true);
   });
 });

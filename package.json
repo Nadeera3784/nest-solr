@@ -1,6 +1,6 @@
 {
   "name": "nest-solr",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "NestJS module for Apache Solr with query builder",
   "author": "Nadeera Sampath",
   "private": false,
