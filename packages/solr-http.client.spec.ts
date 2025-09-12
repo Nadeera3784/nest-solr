@@ -88,7 +88,13 @@ describe('SolrHttpClient', () => {
     const payload = await client.defineSchema({
       fieldTypes: [{ name: 'text_en', class: 'solr.TextField' }],
       fields: [
-        { name: 'id', type: 'string', stored: true, indexed: true, required: true },
+        {
+          name: 'id',
+          type: 'string',
+          stored: true,
+          indexed: true,
+          required: true,
+        },
         { name: 'title', type: 'text_en', stored: true, indexed: true },
       ],
       copyFields: [{ source: 'title', dest: ['text', 'all'] }],
@@ -99,9 +105,13 @@ describe('SolrHttpClient', () => {
     expect(Array.isArray(payload)).toBe(true);
     // Expect 1 fieldType + 2 fields + 2 copyField entries + 1 uniqueKey = 6 commands
     expect(payload).toHaveLength(6);
-    expect(payload[0]).toEqual({ 'add-field-type': { name: 'text_en', class: 'solr.TextField' } });
+    expect(payload[0]).toEqual({
+      'add-field-type': { name: 'text_en', class: 'solr.TextField' },
+    });
     expect(payload.some((c: any) => c['add-field']?.name === 'id')).toBe(true);
-    expect(payload.some((c: any) => c['add-field']?.name === 'title')).toBe(true);
+    expect(payload.some((c: any) => c['add-field']?.name === 'title')).toBe(
+      true,
+    );
     const copyFields = payload.filter((c: any) => c['add-copy-field']);
     expect(copyFields).toHaveLength(2);
     const dests = copyFields.map((c: any) => c['add-copy-field'].dest).sort();

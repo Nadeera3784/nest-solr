@@ -95,7 +95,11 @@ export class SolrHttpClient {
   async defineSchema(definition: {
     fields?: Array<Record<string, any>>;
     fieldTypes?: Array<Record<string, any>>;
-    copyFields?: Array<{ source: string; dest: string | string[]; maxChars?: number }>;
+    copyFields?: Array<{
+      source: string;
+      dest: string | string[];
+      maxChars?: number;
+    }>;
     uniqueKey?: string;
   }): Promise<any> {
     const url = new URL(this.baseUrl + '/schema');
@@ -114,7 +118,11 @@ export class SolrHttpClient {
     if (definition.copyFields?.length) {
       for (const cf of definition.copyFields) {
         const entries = Array.isArray(cf.dest)
-          ? cf.dest.map((d) => ({ source: cf.source, dest: d, maxChars: cf.maxChars }))
+          ? cf.dest.map((d) => ({
+              source: cf.source,
+              dest: d,
+              maxChars: cf.maxChars,
+            }))
           : [{ source: cf.source, dest: cf.dest, maxChars: cf.maxChars }];
         for (const e of entries) payload.push({ 'add-copy-field': e });
       }

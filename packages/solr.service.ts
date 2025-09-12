@@ -2,12 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { SOLR_CLIENT } from './solr.constants';
 import { SolrQueryBuilder } from './solr.query-builder';
 import type { SolrHttpClient, SolrSearchParams } from './solr-http.client';
-import type {
-  SolrCopyField,
-  SolrDefineSchemaOptions,
-  SolrFieldType,
-  SolrSchemaField,
-} from './interfaces/solr.interfaces';
+import type { SolrDefineSchemaOptions } from './interfaces/solr.interfaces';
 
 @Injectable()
 export class SolrService {
