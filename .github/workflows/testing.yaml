@@ -5,7 +5,7 @@ on:
       - main
 jobs:
   lint:
-    name: ESLint
+    name: Run ESLint
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -22,7 +22,7 @@ jobs:
       - name: Run ESLint
         run: npx eslint '{packages,apps,libs,test}/**/*.ts'
   test:
-    name: Node.js 22 (LTS)
+    name: Run Test
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
