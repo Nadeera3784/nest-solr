@@ -2,14 +2,15 @@
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+<h1 align="center">
+  nest-solr
+</h1>
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+<p align="center">
+  A <a href="https://github.com/nestjs/nest">Nest</a> module for <a href="https://solr.apache.org/">Apache Solr</a>
+</p>
 
-## nest-solr
 
-NestJS module for Apache Solr.
 
 ### Installation
 
@@ -87,6 +88,77 @@ export class SearchService {
 }
 ```
 
+### CRUD example
+
+```ts
+import { Injectable } from '@nestjs/common';
+import { SolrService } from 'nest-solr';
+
+interface Book {
+  id: string;
+  title: string;
+  price: number;
+  type: 'book';
+}
+
+@Injectable()
+export class BooksService {
+  constructor(private readonly solr: SolrService) {}
+
+  // Create (single or bulk)
+  async createBooks() {
+    await this.solr.add<Book>(
+      { id: 'b-1', title: 'Clean Code', price: 29.99, type: 'book' },
+      { commitWithin: 500 },
+    );
+
+    await this.solr.add<Book>(
+      [
+        { id: 'b-2', title: 'Node Patterns', price: 39.5, type: 'book' },
+        { id: 'b-3', title: 'Mastering NestJS', price: 49, type: 'book' },
+      ],
+      { commitWithin: 500 },
+    );
+
+    // Or force an immediate commit for reads right away
+    await this.solr.commit();
+  }
+
+  // Read / Search
+  async findCheapBooks() {
+    const qb = this.solr
+      .createQuery()
+      .eq('type', 'book')
+      .and()
+      .lt('price', 40)
+      .fields(['id', 'title', 'price'])
+      .sort('price', 'asc')
+      .rows(10);
+
+    const result = await this.solr.search(qb);
+    return result.response?.docs ?? [];
+  }
+
+  // Update (same as add with overwrite)
+  async updatePrice(id: string, newPrice: number) {
+    await this.solr.add({ id, price: newPrice }, { overwrite: true });
+    await this.solr.commit();
+  }
+
+  // Delete
+  async removeById(id: string) {
+    await this.solr.deleteByID(id);
+    await this.solr.commit();
+  }
+
+  async removeByQuery() {
+    // Deletes all books cheaper than 10
+    await this.solr.deleteByQuery('type:book AND price:{* TO 10}');
+    await this.solr.commit();
+  }
+}
+```
+
 ### Advanced: complex query
 
 ```ts
@@ -135,18 +207,6 @@ export class SearchService {
 }
 ```
 
-### SolrService API
-
-- **getClient()**: returns the underlying HTTP client instance.
-- **createQuery()**: creates a new `SolrQueryBuilder` instance.
-- **add(docOrDocs, options?)**: adds a document or array of documents; supports `{ commitWithin, overwrite }`.
-- **commit()**: commits pending changes (uses `waitSearcher=true`).
-- **deleteByID(id)**: deletes by `id` field.
-- **deleteByQuery(query)**: deletes documents matching a query string (e.g., `id:123`).
-- **optimize(options?)**: optimizes the index; supports `{ softCommit, waitSearcher, maxSegments }`.
-- **search(queryOrBuilder)**: executes a search; accepts a `SolrQueryBuilder` or params object from `builder.toParams()`.
-- **defineSchema(options)**: defines schema via Solr Schema API; supports `{ fieldTypes, fields, copyFields, uniqueKey }`.
-
 ### Define schema (Schema API)
 
 ```ts
@@ -165,9 +225,21 @@ await solrService.defineSchema({
 });
 ```
 
+### SolrService API
+
+- **getClient()**: returns the underlying HTTP client instance.
+- **createQuery()**: creates a new `SolrQueryBuilder` instance.
+- **add(docOrDocs, options?)**: adds a document or array of documents; supports `{ commitWithin, overwrite }`.
+- **commit()**: commits pending changes (uses `waitSearcher=true`).
+- **deleteByID(id)**: deletes by `id` field.
+- **deleteByQuery(query)**: deletes documents matching a query string (e.g., `id:123`).
+- **optimize(options?)**: optimizes the index; supports `{ softCommit, waitSearcher, maxSegments }`.
+- **search(queryOrBuilder)**: executes a search; accepts a `SolrQueryBuilder` or params object from `builder.toParams()`.
+- **defineSchema(options)**: defines schema via Solr Schema API; supports `{ fieldTypes, fields, copyFields, uniqueKey }`.
+
 
 
 
 ## License
 
-Nest is [MIT licensed](LICENSE).
+ [MIT licensed](LICENSE).
