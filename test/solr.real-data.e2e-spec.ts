@@ -129,6 +129,28 @@ describe('Solr real-data E2E', () => {
     expect(ids).toEqual(['b-2', 'b-1']);
   }, 20000);
 
+  it('paginates all docs using CursorMark', async () => {
+    const qb = solr
+      .createQuery()
+      .q('*:*')
+      .filter('id:b-* OR id:m-*')
+      .sort('price', 'asc')
+      .rows(2);
+
+    const expectedIds = docs.map((d) => d.id).sort();
+    let cursor = '*';
+    const found: string[] = [];
+    for (let i = 0; i < 10; i += 1) {
+      // eslint-disable-next-line no-await-in-loop
+      const res = await solr.searchWithCursor(qb, cursor);
+      found.push(...(res.response?.docs || []).map((d: any) => d.id));
+      if (!res.nextCursorMark || res.nextCursorMark === cursor) break;
+      cursor = res.nextCursorMark;
+    }
+    const uniqueSorted = Array.from(new Set(found)).sort();
+    expect(uniqueSorted).toEqual(expectedIds);
+  }, 30000);
+
   it('deletes by ID and verifies', async () => {
     await solr.deleteByQuery('id:m-1');
     await solr.commit();

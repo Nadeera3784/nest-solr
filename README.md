@@ -207,6 +207,40 @@ export class SearchService {
 }
 ```
 
+### CursorMark pagination
+
+```ts
+import { Injectable } from '@nestjs/common';
+import { SolrService } from 'nest-solr';
+
+@Injectable()
+export class CursorExampleService {
+  constructor(private readonly solr: SolrService) {}
+
+  // Fetch all books in pages of 50 using CursorMark
+  async fetchAllBooks() {
+    const qb = this.solr
+      .createQuery()
+      .eq('type', 'book')
+      // CursorMark requires deterministic sort; service will append `id asc` if missing
+      .sort('price', 'asc')
+      .rows(50)
+      .cursor('*'); // optional, you can also pass '*' to the service
+
+    let cursor = '*';
+    const all: any[] = [];
+    while (true) {
+      // You can either rely on qb.cursor('*') or pass the mark explicitly
+      const res = await this.solr.searchWithCursor(qb, cursor);
+      all.push(...(res.response?.docs ?? []));
+      if (!res.nextCursorMark || res.nextCursorMark === cursor) break; // end reached
+      cursor = res.nextCursorMark;
+    }
+    return all;
+  }
+}
+```
+
 ### Define schema (Schema API)
 
 ```ts
