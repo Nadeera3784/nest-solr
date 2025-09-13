@@ -44,7 +44,12 @@ describe('Solr real-data E2E', () => {
   ];
 
   beforeAll(async () => {
-    await waitForSolr('127.0.0.1', 8983, '/solr/mycore/admin/ping?wt=json', 60000);
+    await waitForSolr(
+      '127.0.0.1',
+      8983,
+      '/solr/mycore/admin/ping?wt=json',
+      60000,
+    );
     const moduleRef = await Test.createTestingModule({
       imports: [
         SolrModule.forRoot({
@@ -167,7 +172,12 @@ describe('Solr real-data E2E', () => {
   }, 20000);
 });
 
-async function waitForSolr(host: string, port: number, path: string, timeoutMs: number): Promise<void> {
+async function waitForSolr(
+  host: string,
+  port: number,
+  path: string,
+  timeoutMs: number,
+): Promise<void> {
   const start = Date.now();
   let lastError: any;
   while (Date.now() - start < timeoutMs) {
@@ -197,7 +207,9 @@ async function waitForSolr(host: string, port: number, path: string, timeoutMs: 
     // eslint-disable-next-line no-await-in-loop
     await new Promise((r) => setTimeout(r, 500));
   }
-  throw new Error(`Solr did not become ready in time${lastError ? `: ${String(lastError)}` : ''}`);
+  throw new Error(
+    `Solr did not become ready in time${lastError ? `: ${String(lastError)}` : ''}`,
+  );
 }
 
 async function addFields(
