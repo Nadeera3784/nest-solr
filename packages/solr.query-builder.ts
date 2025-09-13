@@ -123,6 +123,11 @@ export class SolrQueryBuilder {
     return this;
   }
 
+  cursor(mark: string = '*'): this {
+    this.paramsMap['cursorMark'] = mark;
+    return this;
+  }
+
   params(extra: Record<string, string | number | boolean>): this {
     Object.entries(extra).forEach(([k, v]) => {
       this.paramsMap[k] = v as any;

@@ -66,4 +66,54 @@ describe('SolrService', () => {
     });
     expect(res.ok).toBe(true);
   });
+
+  describe('searchWithCursor', () => {
+    it('applies default sort and cursor when missing', async () => {
+      const qb = service.createQuery().eq('type', 'book').rows(2);
+      const res = await service.searchWithCursor(qb);
+      expect(mockClient.search).toHaveBeenCalledTimes(1);
+      const arg = (mockClient.search as jest.Mock).mock.calls[0][0];
+      expect(arg.cursorMark).toBe('*');
+      expect(arg.sort).toBe('id asc');
+      expect(res.nextCursorMark).toBe('*');
+    });
+
+    it('appends uniqueKey to existing sort when missing', async () => {
+      const qb = service.createQuery().q('*:*').sort('price', 'asc').rows(10);
+      await service.searchWithCursor(qb, '*');
+      const arg = (mockClient.search as jest.Mock).mock.calls[0][0];
+      expect(arg.sort).toBe('price asc, id asc');
+    });
+
+    it('respects builder-provided cursor when arg omitted', async () => {
+      const qb = service
+        .createQuery()
+        .q('*:*')
+        .sort('price', 'desc')
+        .rows(5)
+        .cursor('abc');
+      const res = await service.searchWithCursor(qb);
+      const arg = (mockClient.search as jest.Mock).mock.calls[0][0];
+      expect(arg.cursorMark).toBe('abc');
+      expect(arg.sort).toBe('price desc, id asc');
+      expect(res.nextCursorMark).toBe('abc');
+    });
+
+    it('propagates client-provided nextCursorMark', async () => {
+      (mockClient.search as jest.Mock).mockResolvedValueOnce({
+        response: { numFound: 0, docs: [] },
+        nextCursorMark: 'zzz',
+      });
+      const qb = service.createQuery().q('*:*').rows(1);
+      const res = await service.searchWithCursor(qb, 'foo');
+      expect(res.nextCursorMark).toBe('zzz');
+    });
+
+    it('accepts plain params object', async () => {
+      await service.searchWithCursor({ q: '*:*', rows: 3 } as any);
+      const arg = (mockClient.search as jest.Mock).mock.calls[0][0];
+      expect(arg.sort).toBe('id asc');
+      expect(arg.cursorMark).toBe('*');
+    });
+  });
 });

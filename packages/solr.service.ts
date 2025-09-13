@@ -48,6 +48,31 @@ export class SolrService {
     return this.client.search(params);
   }
 
+  async searchWithCursor(
+    query: SolrSearchParams | SolrQueryBuilder,
+    cursorMark?: string,
+    uniqueKey: string = 'id',
+  ): Promise<any> {
+    const base =
+      query instanceof SolrQueryBuilder ? query.toParams() : { ...query };
+    const effectiveCursor = cursorMark ?? (base as any).cursorMark ?? '*';
+    const params: any = { ...base, cursorMark: effectiveCursor };
+    const sort = String(params.sort ?? '').trim();
+    if (!sort) {
+      params.sort = `${uniqueKey} asc`;
+    } else if (
+      !/\b_\w*docid\b|\bscore\b|\b\bid\b/i.test(sort) &&
+      !new RegExp(`\\b${uniqueKey}\\b`, 'i').test(sort)
+    ) {
+      params.sort = `${sort}, ${uniqueKey} asc`;
+    }
+    const res = await this.client.search(params);
+    return {
+      ...res,
+      nextCursorMark: res.nextCursorMark ?? effectiveCursor,
+    };
+  }
+
   async defineSchema(options: SolrDefineSchemaOptions): Promise<any> {
     return this.client.defineSchema({
       fields: options.fields as Array<Record<string, any>> | undefined,
