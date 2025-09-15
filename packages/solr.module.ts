@@ -27,6 +27,9 @@ export class SolrModule {
           path: options.path,
           secure: options.secure,
           basicAuth: options.basicAuth,
+          timeoutMs: options.timeoutMs,
+          retry: options.retry,
+          breaker: options.breaker,
         }),
     };
 
@@ -49,6 +52,9 @@ export class SolrModule {
           path: opts.path,
           secure: opts.secure,
           basicAuth: opts.basicAuth,
+          timeoutMs: opts.timeoutMs,
+          retry: opts.retry,
+          breaker: opts.breaker,
         }),
       inject: [SOLR_MODULE_OPTIONS],
     };

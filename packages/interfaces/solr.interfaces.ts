@@ -1,5 +1,14 @@
 import { ModuleMetadata, Type } from '@nestjs/common';
 
+export interface SolrRetryOptions {
+  attempts?: number;
+  backoffMs?: number;
+}
+
+export interface SolrCircuitBreakerOptions {
+  threshold?: number;
+}
+
 export interface SolrModuleOptions {
   host?: string;
   port?: string | number;
@@ -7,6 +16,9 @@ export interface SolrModuleOptions {
   path?: string;
   secure?: boolean;
   basicAuth?: { username: string; password: string };
+  timeoutMs?: number;
+  retry?: SolrRetryOptions;
+  breaker?: SolrCircuitBreakerOptions;
 }
 
 export interface SolrModuleOptionsFactory {

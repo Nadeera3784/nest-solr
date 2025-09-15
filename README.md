@@ -64,6 +64,49 @@ import { SolrModule } from 'nest-solr';
 export class AppModule {}
 ```
 
+### Resilience options (timeouts, retries, circuit breaker)
+
+You can optionally enable resilience behaviors on the client. All fields are optional and default to disabled, preserving previous behavior.
+
+- **timeoutMs**: Request timeout in milliseconds. When exceeded, the request fails with a timeout error.
+- **retry**: Controls automatic retries on failure.
+  - **attempts**: Number of retry attempts (default 0 = disabled).
+  - **backoffMs**: Base wait in ms between attempts; linear backoff is used: backoffMs × attemptNumber.
+- **breaker**: Simple circuit breaker based on consecutive failures.
+  - **threshold**: Open the circuit after this many consecutive failures (default 0 = disabled). While open, requests fail fast until a short cooldown elapses.
+
+```ts
+// Synchronous configuration
+SolrModule.forRoot({
+  host: 'localhost',
+  port: 8983,
+  core: 'mycore',
+  secure: false,
+  // Resilience (optional)
+  timeoutMs: 2000,
+  retry: { attempts: 2, backoffMs: 300 },
+  breaker: { threshold: 5 },
+});
+```
+
+```ts
+// Async configuration
+SolrModule.forRootAsync({
+  useFactory: () => ({
+    host: 'localhost',
+    port: 8983,
+    core: 'mycore',
+    secure: false,
+    // Resilience (optional)
+    timeoutMs: 2000,
+    retry: { attempts: 2, backoffMs: 300 },
+    breaker: { threshold: 5 },
+  }),
+});
+```
+
+- **Backward compatibility**: If you omit these fields, behavior is unchanged (no timeouts, no retries, breaker disabled).
+
 ### Usage
 
 ```ts
