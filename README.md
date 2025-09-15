@@ -105,8 +105,6 @@ SolrModule.forRootAsync({
 });
 ```
 
-- **Backward compatibility**: If you omit these fields, behavior is unchanged (no timeouts, no retries, breaker disabled).
-
 ### Usage
 
 ```ts
