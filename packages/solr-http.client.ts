@@ -9,6 +9,9 @@ export interface SolrClientOptions {
   path?: string;
   secure?: boolean;
   basicAuth?: { username: string; password: string };
+  timeoutMs?: number;
+  retry?: { attempts?: number; backoffMs?: number };
+  breaker?: { threshold?: number };
 }
 
 export type SolrSearchParams = Record<
@@ -20,6 +23,13 @@ export class SolrHttpClient {
   private readonly baseUrl: string;
   private readonly authHeader?: string;
   private readonly agent: http.Agent | https.Agent | undefined;
+  private readonly timeoutMs: number | undefined;
+  private readonly retryAttempts: number;
+  private readonly retryBackoffMs: number;
+  private readonly breakerThreshold: number;
+  private consecutiveFailures = 0;
+  private circuitOpen = false;
+  private reopenAt = 0;
 
   constructor(private readonly options: SolrClientOptions = {}) {
     const protocol = options.secure ? 'https:' : 'http:';
@@ -39,6 +49,11 @@ export class SolrHttpClient {
     this.agent = options.secure
       ? new https.Agent({ keepAlive: true })
       : new http.Agent({ keepAlive: true });
+
+    this.timeoutMs = options.timeoutMs;
+    this.retryAttempts = Math.max(0, options.retry?.attempts ?? 0);
+    this.retryBackoffMs = Math.max(0, options.retry?.backoffMs ?? 0);
+    this.breakerThreshold = Math.max(0, options.breaker?.threshold ?? 0);
   }
 
   async search(params: SolrSearchParams): Promise<any> {
@@ -154,53 +169,114 @@ export class SolrHttpClient {
       headers['Authorization'] = this.authHeader;
     }
 
-    return new Promise((resolve, reject) => {
-      const req = transport.request(
-        {
-          method,
-          protocol: url.protocol,
-          hostname: url.hostname,
-          port: url.port,
-          path: url.pathname + (url.search || ''),
-          headers,
-          agent: this.agent,
-        },
-        (res) => {
-          const chunks: Buffer[] = [];
-          res.on('data', (d) =>
-            chunks.push(Buffer.isBuffer(d) ? d : Buffer.from(d)),
-          );
-          res.on('end', () => {
-            const buffer = Buffer.concat(chunks);
-            const contentType = res.headers['content-type'] || '';
-            const text = buffer.toString('utf8');
-            if (
-              res.statusCode &&
-              res.statusCode >= 200 &&
-              res.statusCode < 300
-            ) {
-              if (contentType.includes('application/json')) {
-                try {
-                  resolve(JSON.parse(text));
-                } catch {
+    const attemptRequest = (): Promise<any> =>
+      new Promise((resolve, reject) => {
+        if (this.circuitOpen && Date.now() < this.reopenAt) {
+          return reject(new Error('Solr circuit open'));
+        }
+
+        const req = transport.request(
+          {
+            method,
+            protocol: url.protocol,
+            hostname: url.hostname,
+            port: url.port,
+            path: url.pathname + (url.search || ''),
+            headers,
+            agent: this.agent,
+          },
+          (res) => {
+            const chunks: Buffer[] = [];
+            res.on('data', (d) =>
+              chunks.push(Buffer.isBuffer(d) ? d : Buffer.from(d)),
+            );
+            res.on('end', () => {
+              const buffer = Buffer.concat(chunks);
+              const contentType = res.headers['content-type'] || '';
+              const text = buffer.toString('utf8');
+              if (
+                res.statusCode &&
+                res.statusCode >= 200 &&
+                res.statusCode < 300
+              ) {
+                this.onSuccess();
+                if (contentType.includes('application/json')) {
+                  try {
+                    resolve(JSON.parse(text));
+                  } catch {
+                    resolve(text);
+                  }
+                } else {
                   resolve(text);
                 }
               } else {
-                resolve(text);
+                const error = new Error(
+                  `Solr request failed: ${res.statusCode} ${res.statusMessage} - ${text}`,
+                );
+                this.onFailure();
+                reject(error);
               }
-            } else {
-              const error = new Error(
-                `Solr request failed: ${res.statusCode} ${res.statusMessage} - ${text}`,
-              );
-              reject(error);
-            }
-          });
-        },
-      );
-      req.on('error', reject);
-      if (payload) req.write(payload);
-      req.end();
-    });
+            });
+          },
+        );
+
+        const timeoutMs = this.timeoutMs;
+        let timeout: NodeJS.Timeout | undefined;
+        if (timeoutMs && timeoutMs > 0) {
+          timeout = setTimeout(() => {
+            req.destroy(new Error('Solr request timeout'));
+          }, timeoutMs);
+        }
+
+        req.on('error', (err) => {
+          if (timeout) clearTimeout(timeout);
+          this.onFailure();
+          reject(err);
+        });
+        req.on('close', () => {
+          if (timeout) clearTimeout(timeout);
+        });
+        if (payload) req.write(payload);
+        req.end();
+      });
+
+    let lastError: any;
+    const totalAttempts = 1 + this.retryAttempts;
+    for (let attemptIndex = 0; attemptIndex < totalAttempts; attemptIndex++) {
+      try {
+        const result = await attemptRequest();
+        return result;
+      } catch (err) {
+        lastError = err;
+        if (attemptIndex < totalAttempts - 1) {
+          const backoff = this.retryBackoffMs * (attemptIndex + 1);
+          if (backoff > 0) {
+            await new Promise((r) => setTimeout(r, backoff));
+          }
+        }
+      }
+    }
+    throw lastError;
+  }
+
+  private onSuccess(): void {
+    this.consecutiveFailures = 0;
+    if (this.circuitOpen && Date.now() >= this.reopenAt) {
+      this.circuitOpen = false;
+    }
+  }
+
+  private onFailure(): void {
+    this.consecutiveFailures += 1;
+    if (
+      this.breakerThreshold > 0 &&
+      this.consecutiveFailures >= this.breakerThreshold
+    ) {
+      this.circuitOpen = true;
+      // Cooldown equals backoff or 1000ms fallback
+      const cooldown = Math.max(1000, this.retryBackoffMs || 0);
+      this.reopenAt = Date.now() + cooldown;
+    }
   }
 
   private appendParams(url: URL, params: SolrSearchParams): void {

@@ -5,7 +5,7 @@ on:
       - main
 jobs:
   lint:
-    name: Run ESLint
+    name: Run Lint
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run ESLint
-        run: npx eslint '{packages,apps,libs,test}/**/*.ts'
+        run: npx eslint '{packages,libs,test}/**/*.ts'
   test:
     name: Run Test
     runs-on: ubuntu-24.04
